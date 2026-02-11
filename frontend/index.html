@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manage Books &amp; Users</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <main class="frame">
+    <h1>Manage Books &amp; Users</h1>
+
+    <div class="sections">
+      <!-- 1. Add Book -->
+      <section class="panel panel-book">
+        <h2>1. Add Book</h2>
+        <form id="add-book-form">
+          <label>Book ID <input type="text" id="book-id" name="id" placeholder="VD: B1" required /></label>
+          <label>Title <input type="text" id="book-title" name="title" placeholder="Title" required /></label>
+          <label>Author <input type="text" id="book-author" name="author" placeholder="Author" required /></label>
+          <div class="actions"><button type="submit">Add Book</button></div>
+        </form>
+        <div id="add-book-message" class="message" role="alert" aria-live="polite" hidden></div>
+      </section>
+
+      <!-- 2. Add User -->
+      <section class="panel panel-user">
+        <h2>2. Add User</h2>
+        <form id="add-user-form">
+          <label>User ID <input type="text" id="user-id" name="id" placeholder="VD: U1" required /></label>
+          <label>Name <input type="text" id="user-name" name="name" placeholder="Name" required /></label>
+          <label>Email <input type="email" id="user-email" name="email" placeholder="email@example.com" required /></label>
+          <div class="actions"><button type="submit">Add User</button></div>
+        </form>
+        <div id="add-user-message" class="message" role="alert" aria-live="polite" hidden></div>
+      </section>
+
+      <!-- 3. Borrow Book -->
+      <section class="panel panel-borrow">
+        <h2>3. Borrow Book</h2>
+        <form id="borrow-form">
+          <label>Borrower ID <input type="text" id="borrow-user-id" placeholder="VD: U1" required /></label>
+          <label>Book ID <input type="text" id="borrow-book-id" placeholder="VD: B1" required /></label>
+          <div class="actions"><button type="submit">Borrow Book</button></div>
+        </form>
+        <div id="borrow-message" class="message" role="alert" aria-live="polite" hidden></div>
+      </section>
+
+      <!-- 4. Return Book -->
+      <section class="panel panel-return">
+        <h2>4. Return Book</h2>
+        <form id="return-form">
+          <label>Borrower ID <input type="text" id="return-user-id" placeholder="VD: U1" required /></label>
+          <label>Book ID <input type="text" id="return-book-id" placeholder="VD: B1" required /></label>
+          <div class="actions"><button type="submit">Return Book</button></div>
+        </form>
+        <div id="return-message" class="message" role="alert" aria-live="polite" hidden></div>
+      </section>
+
+      <!-- 5. Lookup by ID -->
+      <section class="panel panel-lookup">
+        <h2>5. Lookup by ID</h2>
+        <form id="lookup-form">
+          <label>Type <select id="lookup-type" name="type"><option value="book">Book</option><option value="user">User</option></select></label>
+          <label>ID <input type="text" id="lookup-id" placeholder="VD: B1, U1" required /></label>
+          <div class="actions"><button type="submit">Lookup</button></div>
+        </form>
+        <div id="lookup-message" class="message" role="alert" aria-live="polite" hidden></div>
+        <div id="lookup-result" class="lookup-result" hidden>
+          <h3>Result</h3>
+          <pre id="lookup-result-body"></pre>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
