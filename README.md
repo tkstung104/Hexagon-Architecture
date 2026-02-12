@@ -16,39 +16,101 @@
   - **Driving adapters:** Controllers gọi use case.
   - **Driven adapters:** Repository In-Memory hoặc MongoDB implement `IBookRepository` / `IUserRepository`.
 
-Luồng hoạt động theo dependency: **HTTP -> Controller -> Driving Port -> Use Case -> Driven Port -> Repository**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
+Luồng hoạt động theo dependency: **HTTP → Controller → Driving Port → Use Case → Driven Port → Repository**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
+
+## Kiến trúc Hexagonal trong dự án – component và code
+
+Phần này ánh xạ từng **khái niệm** Hexagonal với **code hiện tại** trong repo.
+
+### 1. Entity (thực thể nghiệp vụ)
+
+**Khái niệm:** Trái tim của Hexagonal. Đại diện cho một đối tượng nghiệp vụ cụ thể đã tồn tại, chứa quy tắc và logic của chính nó, không phụ thuộc HTTP hay database.
+
+**Trong code:**
+- `src/domain/entities/Book.ts` — entity Sách: `borrow()`, `returnBook()`, quy tắc “đã mượn thì không mượn lại”.
+- `src/domain/entities/User.ts` — entity Người dùng: `addBorrowedBook()`, `removeBorrowedBook()`, `getBorrowedBooksCount()`.
+
+### 2. Inbound Port / Driving Port (cổng vào – use case)
+
+**Khái niệm:** Contract mà bên ngoài dùng để “gọi vào” ứng dụng. Định nghĩa **cách** core nhận lệnh (vd: mượn sách, thêm sách), không phụ thuộc HTTP hay CLI.
+
+**Trong code:** Các interface trong `src/domain/ports/driving/`:
+- `IAddBookUseCase`, `IAddUserUseCase`, `IBorrowBookUseCase`, `IReturnBookUseCase` — mỗi cái khai báo một `execute(...)` với tham số domain (id, title, author, userId, bookId…).
+
+### 3. Outbound Port / Driven Port (cổng ra – repository)
+
+**Khái niệm:** Contract mà core cần để **lưu/đọc dữ liệu**. Core chỉ biết “lưu sách”, “tìm sách theo id”; không biết MongoDB hay in-memory.
+
+**Trong code:** Các interface trong `src/domain/ports/driven/`:
+- `IBookRepository`: `save(book: Book)`, `findById(id: string)`.
+- `IUserRepository`: `save(user: User)`, `findById(id: string)`.
+
+Đây là **outbound port**: core gọi chúng khi cần persist/load; implementation nằm ở infrastructure.
+
+### 4. Inbound Adapter / Driving Adapter (adapter nhận dữ liệu từ ngoài)
+
+**Khái niệm:** Nhận dữ liệu “thô” từ bên ngoài (HTTP, CLI, message queue…), chuyển thành tham số mà **Inbound Port** (use case) mong đợi, gọi use case, rồi chuyển kết quả/lỗi trở lại cho client.
+
+**Trong code:** `src/infrastructure/adapters/driving/`:
+- `BookController.ts` — nhận `Request`/`Response` (Express), lấy `userId`, `bookId` từ `req.body`/`req.params`, gọi `borrowBookUseCase.execute(userId, bookId)`, trả JSON qua `res`.
+- `UserController.ts` — tương tự cho User (thêm user, v.v.).
+
+Đây là **inbound adapter**: nhận HTTP → gọi driving port (use case interface) → trả response.
+
+### 5. Outbound Adapter / Repository implementation (adapter ra ngoài – lưu/đọc data)
+
+**Khái niệm:** Implement **Outbound Port** (IBookRepository, IUserRepository). Nhận domain entity từ core, “dịch” sang công nghệ bên ngoài (MongoDB, PostgreSQL, in-memory…) và ngược lại (doc/row → entity).
+
+**Trong code:** `src/infrastructure/adapters/driven/`:
+- `MongoBookRepository.ts` — implement `IBookRepository`: `save(book)` ghi Mongoose, `findById(id)` đọc DB rồi map document → `Book`.
+- `MongoUserRepository.ts` — tương tự cho User.
+- `InMemoryBookRepository.ts`, `InMemoryUserRepository.ts` — cùng port, implement bằng Map trong RAM.
+
+Đây vừa là **outbound port implementation**, vừa là **repository** (outbound adapter chuyên lưu/đọc).
+
+### 6. Application service / Use case (ứng dụng – điều phối)
+
+**Khái niệm:** Nhận lệnh qua Inbound Port, gọi entity để xử lý logic, gọi Outbound Port để lưu/đọc. Không chứa chi tiết HTTP hay DB, chỉ điều phối.
+
+**Trong code:** `src/application/use-cases/`:
+- `BorrowBook.ts` — implement `IBorrowBookUseCase`: lấy user/book qua `userRepo.findById`, `bookRepo.findById`; gọi `book.borrow()`, `user.addBorrowedBook(bookId)`; lưu qua `bookRepo.save(book)`, `userRepo.save(user)`.
+- `AddBook.ts`, `AddUser.ts`, `ReturnBook.ts` — cùng mẫu: port (driven) → entity → port (driven).
+
+### 7. Transport / Composition root (lớp gắn kết)
+
+**Khái niệm:** Nơi gắn HTTP (routes) với Inbound Adapter và khởi tạo toàn bộ (repositories, use cases, controllers). Dependency Injection thường nằm đây.
+
+**Trong code:** `src/index.ts`:
+- Tạo repository (Mongo hoặc InMemory) theo `MONGO_URI`.
+- Tạo use case (BorrowBook, ReturnBook, AddBook, AddUser) inject repo.
+- Tạo `BookController`, `UserController` inject use case + repo (cho getById).
+- `app.post("/books/borrow", ...)`, `app.get("/books/:id", ...)` — Express là **transport**; mỗi route gọi method tương ứng trên controller (inbound adapter).
+
+### Tóm tắt ánh xạ
+
+| Thành phần Hexagonal | Trong dự án (code) |
+|----------------------|--------------------|
+| Entity | `src/domain/entities/Book.ts`, `User.ts` |
+| Inbound Port (driving) | `src/domain/ports/driving/I*UseCase.ts` |
+| Outbound Port (driven) | `src/domain/ports/driven/IBookRepository.ts`, `IUserRepository.ts` |
+| Inbound Adapter | `src/infrastructure/adapters/driving/BookController.ts`, `UserController.ts` |
+| Outbound Adapter / Repository | `MongoBookRepository`, `MongoUserRepository`, `InMemoryBookRepository`, `InMemoryUserRepository` |
+| Use case | `src/application/use-cases/BorrowBook.ts`, `AddBook.ts`, … |
+| Transport / Composition | `src/index.ts` (Express routes + DI) |
 
 ## Cấu trúc và quy trình của Hexagonal Architecture
 
 Hexagonal Architecture: là kiến trúc để tách biệt business logic với bên ngoài, để code nghiệp vụ không bị trộn lẫn với code truy vấn.
 
-### Kiến trúc
+### Các khái niệm (tóm tắt)
 
-1. **Entities**
-  - Là trái tim của HA.
-  - Đại diện cho Business Logic và đặt luật cho application.
-  - Đám bảo đóng gói và có thể điều hành mà không phụ thuộc vào data.
-
-2. **Port**: Nơi giao tiếp, để  inside và outside không vi phạm quy tắc lẫn nhau.
-  - Inbound Port (Driving): Những gì core cho bên ngoài sử dụng. chịu trách nhiệm nhận input và kích hoạt xử lý logic.
-  - Outbound Port (Driven): Những gì core cần, yêu cầu từ bên ngoài để hoạt động.
-
-3. **Adapter**: Phần implement thực tế của Port. Có trách nhiệm translate data bên ngoài như (http, db query,...) thành một cái gì đó mà core hiểu được và ngược lại.
-  - Inbound Adapter (Driving): Đứng trước Driving Port, nhận dữ liệu thô thiển từ bên ngoài và trích xuất đúng thứ mà core mong đợi.
-  - Outbound Adtapter (Driven): Đứng sau Driven Port, Core đưa cho Adapter một domain entity. Adapter phải dịch entiry ra.
-
-4. **Application service (Interractor/Use cases)**
-  - Nhận các yêu cầu từ inbound port, gọi các entity để xử lý logic, cuối cùng gọi Outbound Port để lưu.
-  - Đặc điểm: không chứa logic cốt lõi, chỉ điều phối.
-  Luồng: **Nhận data từ port -> Gọi entity để xử lý logic -> Gọi repo để lưu kết quả**
-
-5. **Repositories**: Dạng của Outbound Adapter, tập trung hoàn toàn vào việc lưu dữ liệu
-  - Che dấu sự phức tạp của việc truy vấn data khỏi core, core chỉ thấy interface (Port) đơn giản như saveBook chứ không cần phải biết làm thế nào.
-
-6. **Transport layer**: Lớp xử lý giao tiếp giữa bên ngoài và trong ứng dụng
-  - Tiếp nhận thông tin vào chuyển đến Adapter.
-
-7. **External System**: Ứng dụng cần giao tiếp nhưng không sở hữu, connect thông qua Outbound Adapter.
+1. **Entities** — Trái tim của HA; đại diện Business Logic và quy tắc; không phụ thuộc data bên ngoài.
+2. **Port** — Contract giao tiếp: Inbound (core cho bên ngoài gọi vào), Outbound (core cần bên ngoài cung cấp).
+3. **Adapter** — Implement Port: Inbound Adapter nhận dữ liệu thô (HTTP…) chuyển thành lệnh cho core; Outbound Adapter dịch entity ↔ DB/API.
+4. **Use case** — Nhận lệnh qua Inbound Port, gọi entity + Outbound Port; chỉ điều phối.
+5. **Repository** — Dạng Outbound Adapter, chuyên lưu/đọc; core chỉ thấy Port (save, findById).
+6. **Transport** — Lớp nhận kết nối bên ngoài (HTTP, CLI) và chuyển đến Inbound Adapter; thường kèm DI.
+7. **External System** — Hệ thống bên ngoài (DB, API) kết nối qua Outbound Adapter.
 
 ### Giải đáp thắc mắc
 
