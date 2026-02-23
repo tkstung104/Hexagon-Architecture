@@ -1,5 +1,7 @@
 # Hexagonal Architecture
 
+> Tài liệu do **người viết**, có sự **hỗ trợ của AI** (Tạo sườn và viết cấu trúc dự án).
+
 Ứng dụng quản lý sách và người dùng (mượn/trả sách), xây dựng theo **Hexagonal Architecture** (Ports & Adapters).
 
 ## Kiến trúc Hexagonal trong dự án
@@ -15,7 +17,7 @@
   - Driving: Controller (ở đây là Express) gọi use case.
   - Driven: In-Memory hoặc Mongo implementation của IBookRepository / IUserRepository.
 
-Luồng hoạt động theo dependency: **HTTP → Controller → Driving Port → Use Case → Driven Port → Repository**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
+Luồng hoạt động theo dependency: **HTTP -> Controller -> Driving Port -> Use Case -> Driven Port -> Repository**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
 
 ## Kiến trúc Hexagonal trong dự án – component và code
 
