@@ -3,7 +3,7 @@ export class User {
       public readonly id: string,
       public readonly name: string,
       public readonly email: string,
-      public borrowedBookIds: string[] = [],
+      public borrowedBookIds: string[] = []
     ) {}
   
     public addBorrowedBook(bookId: string): void {
@@ -17,4 +17,9 @@ export class User {
     public getBorrowedBooksCount(): number {
       return this.borrowedBookIds.length;
     }
+
+    public canBorrowMore(): Boolean {
+      return this.borrowedBookIds.length < 5;
+    }
+
   }

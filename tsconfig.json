@@ -10,7 +10,7 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "esnext",
-    "types": [],
+    "types": ["node", "jest"],
     "rootDir": "./src",
     "outDir": "./dist",
     // For nodejs:

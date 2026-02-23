@@ -14,14 +14,15 @@ export class BorrowBook implements IBorrowBookUseCase {
       this.bookRepo.findById(bookId)
     ]);
 
-    if (!user) throw new Error("User không tồn tại");
-    if (!book) throw new Error("Sách không tồn tại");
+    if (!user) throw new Error("User not exist");
+    if (!book) throw new Error("book not exist");
 
-    // Gọi logic từ Entity
+    // call logic from entity
     book.borrow();
+    if (!user.canBorrowMore()) throw new Error("The number of books borrowed is reached the limit of 5");
     user.addBorrowedBook(bookId);
 
-    // Lưu lại qua Port
+    // Save through Port
     await Promise.all([
       this.bookRepo.save(book),
       this.userRepo.save(user)
