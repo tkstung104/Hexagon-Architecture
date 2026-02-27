@@ -1,8 +1,7 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, type ClientSession } from "mongoose";
 import { User } from "@entities/User.js";
 import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
-// Define Schema for User
 const UserSchema = new Schema({
   _id: String,
   name: String,
@@ -12,25 +11,26 @@ const UserSchema = new Schema({
 
 const UserModel = model("User", UserSchema);
 
-// Implement Adapter
 export class MongoUserRepository implements IUserRepository {
+  constructor(private readonly session?: ClientSession) {}
+
   async save(user: User): Promise<void> {
     await UserModel.findByIdAndUpdate(
       user.id,
-      { 
-        name: user.name, 
-        email: user.email, 
-        borrowedBookIds: user.borrowedBookIds 
+      {
+        name: user.name,
+        email: user.email,
+        borrowedBookIds: user.borrowedBookIds,
       },
-      { upsert: true }
+      { upsert: true, ...(this.session ? { session: this.session } : {}) }
     );
   }
 
   async findById(id: string): Promise<User | null> {
-    const doc = await UserModel.findById(id);
+    const query = UserModel.findById(id);
+    if (this.session) query.session(this.session);
+    const doc = await query;
     if (!doc) return null;
-
-    // Convert from MongoDB Document to Domain Entity
     return new User(
       doc._id as string,
       doc.name!,
