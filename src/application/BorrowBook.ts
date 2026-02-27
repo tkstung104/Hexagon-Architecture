@@ -1,6 +1,6 @@
-import type { IBookRepository } from "../../domain/ports/driven/IBookRepository.js";
-import type { IUserRepository } from "../../domain/ports/driven/IUserRepository.js";
-import type { IBorrowBookUseCase } from "../../domain/ports/driving/IBorrowBookUseCase.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
+import type { IBorrowBookUseCase } from "@port/driving/IBorrowBookUseCase.js";
 
 export class BorrowBook implements IBorrowBookUseCase {
   constructor(
@@ -18,8 +18,9 @@ export class BorrowBook implements IBorrowBookUseCase {
     if (!book) throw new Error("book not exist");
 
     // call logic from entity
+    user.canBorrowMore();
     book.borrow();
-    if (!user.canBorrowMore()) throw new Error("The number of books borrowed is reached the limit of 5");
+    // if (!user.canBorrowMore()) throw new Error("The number of books borrowed is reached the limit of 5");
     user.addBorrowedBook(bookId);
 
     // Save through Port

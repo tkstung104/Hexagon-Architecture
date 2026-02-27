@@ -6,18 +6,16 @@ describe("User entity", () => {
         const user = new User("U1","Tung","tung@com", ["b1","b2"]);
 
         // Act
-        const check = user.canBorrowMore();
-
-        // Assert
-        expect(check).toBe(true);
-
+        expect(() => {
+            user.canBorrowMore();
+        }).not.toThrow();
     })
 
     test("Borrowed more than 5 books",() => {
         const user = new User("U1","Tung","tung@com",["b1","b2","b3","b4","b5","b6"])
     
-        const check = user.canBorrowMore();
-
-        expect(check).toBe(false)
+        expect(() => {
+            user.canBorrowMore();
+        }).toThrow("The number of books borrowed is reached the limit of 5");
     });
 });

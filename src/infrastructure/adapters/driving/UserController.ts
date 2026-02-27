@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import type { IAddUserUseCase } from "../../../domain/ports/driving/IAddUserUseCase.js";
-import type { IUserRepository } from "../../../domain/ports/driven/IUserRepository.js";
+import type { IAddUserUseCase } from "@port/driving/IAddUserUseCase.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
 export class UserController {
   constructor(

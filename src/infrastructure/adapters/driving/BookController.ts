@@ -1,8 +1,8 @@
 import type { Request, Response } from "express";
-import type { IBorrowBookUseCase } from "../../../domain/ports/driving/IBorrowBookUseCase.js";
-import type { IAddBookUseCase } from "../../../domain/ports/driving/IAddBookUseCase.js";
-import type { IBookRepository } from "../../../domain/ports/driven/IBookRepository.js";
-import type { IReturnBookUseCase } from "../../../domain/ports/driving/IReturnBookUseCase.js";
+import type { IBorrowBookUseCase } from "@port/driving/IBorrowBookUseCase.js";
+import type { IAddBookUseCase } from "@port/driving/IAddBookUseCase.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import type { IReturnBookUseCase } from "@port/driving/IReturnBookUseCase.js";
 
 export class BookController {
   constructor(

@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
-import { User } from "../../../domain/entities/User.js";
-import type { IUserRepository } from "../../../domain/ports/driven/IUserRepository.js";
+import { User } from "@entities/User.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
 // Define Schema for User
 const UserSchema = new Schema({

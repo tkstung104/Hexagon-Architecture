@@ -18,8 +18,8 @@ export class User {
       return this.borrowedBookIds.length;
     }
 
-    public canBorrowMore(): Boolean {
-      return this.borrowedBookIds.length < 5;
+    public canBorrowMore(): void {
+      if (this.borrowedBookIds.length >= 5) throw new Error("The number of books borrowed is reached the limit of 5");
     }
 
   }

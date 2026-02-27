@@ -1,5 +1,5 @@
-import { User } from "../../../domain/entities/User.js";
-import type { IUserRepository } from "../../../domain/ports/driven/IUserRepository.js";
+import { User } from "@entities/User.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
 export class InMemoryUserRepository implements IUserRepository {
   private users: User[] = [];

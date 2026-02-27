@@ -4,22 +4,22 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 // Import Adapters
-import { MongoBookRepository } from "./infrastructure/adapters/driven/MongoBookRepository.js";
-import { MongoUserRepository } from "./infrastructure/adapters/driven/MongoUserRepository.js";
-import { InMemoryBookRepository } from "./infrastructure/adapters/driven/InMemoryBookRepository.js";
-import { InMemoryUserRepository } from "./infrastructure/adapters/driven/InMemoryUserRepository.js";
-import { BookController } from "./infrastructure/adapters/driving/BookController.js";
-import { UserController } from "./infrastructure/adapters/driving/UserController.js";
+import { MongoBookRepository } from "@infrastructure/adapters/driven/MongoBookRepository.js";
+import { MongoUserRepository } from "@infrastructure/adapters/driven/MongoUserRepository.js";
+import { InMemoryBookRepository } from "@infrastructure/adapters/driven/InMemoryBookRepository.js";
+import { InMemoryUserRepository } from "@infrastructure/adapters/driven/InMemoryUserRepository.js";
+import { BookController } from "@infrastructure/adapters/driving/BookController.js";
+import { UserController } from "@infrastructure/adapters/driving/UserController.js";
 
 // Import Interators
-import { BorrowBook } from "./application/use-cases/BorrowBook.js";
-import { ReturnBook } from "./application/use-cases/ReturnBook.js";
-import { AddBook } from "./application/use-cases/AddBook.js";
-import { AddUser } from "./application/use-cases/AddUser.js";
+import { BorrowBook } from "@application/BorrowBook.js";
+import { ReturnBook } from "@application/ReturnBook.js";
+import { AddBook } from "@application/AddBook.js";
+import { AddUser } from "@application/AddUser.js";
 
 // Import Core & Ports
-import type { IBookRepository } from "./domain/ports/driven/IBookRepository.js";
-import type { IUserRepository } from "./domain/ports/driven/IUserRepository.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
 
 

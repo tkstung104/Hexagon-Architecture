@@ -1,6 +1,6 @@
 import { ReturnBook } from "./ReturnBook.js"
-import { Book } from "../../domain/entities/Book.js";
-import { User } from "../../domain/entities/User.js";
+import { Book } from "@entities/Book.js";
+import { User } from "@entities/User.js";
 
 describe("Unit test: Return Book Use Case", () => {
     let mockBookRepo : any;

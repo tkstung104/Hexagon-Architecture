@@ -1,6 +1,6 @@
-import type { IBookRepository } from "../../domain/ports/driven/IBookRepository.js";
-import type { IUserRepository } from "../../domain/ports/driven/IUserRepository.js";
-import type { IReturnBookUseCase } from "../../domain/ports/driving/IReturnBookUseCase.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
+import type { IReturnBookUseCase } from "@port/driving/IReturnBookUseCase.js";
 
 export class ReturnBook implements IReturnBookUseCase {
   constructor(

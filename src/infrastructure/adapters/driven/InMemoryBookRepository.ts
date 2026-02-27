@@ -1,5 +1,5 @@
-import type { IBookRepository } from "../../../domain/ports/driven/IBookRepository.js";
-import { Book } from "../../../domain/entities/Book.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import { Book } from "@entities/Book.js";
 
 export class InMemoryBookRepository implements IBookRepository {
     private books: Book[] = [];
