@@ -5,19 +5,18 @@
 Ứng dụng quản lý sách và người dùng (mượn/trả sách), xây dựng theo **Hexagonal Architecture** (Ports & Adapters).
 
 ## Kiến trúc Hexagonal trong dự án
-- **Domain:** Các entity (Book, User) + các port (interface).
-  - Book: logic một cuốn sách cụ thể (mượn, trả, không mượn lại khi đang mượn, giới hạn sách được mượn).
-  - User: logic một user (thêm/xóa sách đang mượn, đếm sách mượn).
-  - Driving port: use case (IAddBookUseCase, IBorrowBookUseCase…).
-  - Driven port: repo (IBookRepository, IUserRepository) – core chỉ cần save/findById.
+- **Domain / Core:** Các entity (Book, User) và các port (interface).
+  - Entity: nằm ở `src/entities` – chỉ chứa logic nghiệp vụ (mượn/trả sách, ràng buộc số lượng…).
+  - Driving port: interface use case (`IAddBookUseCase`, `IBorrowBookUseCase`…) ở `src/port/driving`.
+  - Driven port: interface để core làm việc với bên ngoài (`IBookRepository`, `IUserRepository`, `IUnitOfWork`, `IUnitOfWorkFactory`) ở `src/port/driven`.
 
-- **Application:** Các use case (AddBook, AddUser, BorrowBook, ReturnBook). Chúng gọi repo qua port, không dính gì đến Express hay MongoDB.
+- **Application:** Các use case (`AddBook`, `AddUser`, `BorrowBook`, `ReturnBook`) ở `src/application`. Chúng gọi **Unit of Work** (qua `IUnitOfWork`) để vừa đọc/ghi qua repository, vừa đảm bảo transaction MongoDB, không đụng tới Express hay Mongoose.
 
-- **Infrastructure:** Adapter.
-  - Driving: Controller (ở đây là Express) gọi use case.
-  - Driven: In-Memory hoặc Mongo implementation của IBookRepository / IUserRepository.
+- **Infrastructure:** Các adapter implement port.
+  - Driving: Controller (ở đây là Express) gọi use case qua driving port.
+  - Driven: In-Memory hoặc Mongo implementation cho repository và Unit of Work (`MongoBookRepository`, `MongoUserRepository`, `MongoUnitOfWork`, `InMemory*`).
 
-Luồng hoạt động theo dependency: **HTTP -> Controller -> Driving Port -> Use Case -> Driven Port -> Repository**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
+Luồng hoạt động theo dependency: **HTTP → Controller → Driving Port (Use Case) → Use Case → Driven Port (UnitOfWork / Repository) → MongoDB / InMemory**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
 
 ## Kiến trúc Hexagonal trong dự án – component và code
 
@@ -30,11 +29,11 @@ Là thành phần cốt lõi trong Hexagonal Architecture, tập trung logic cho
 
 ### 2. Inbound Port (driving)
 Contract để bên ngoài gọi vào core (mượn sách, thêm sách…).
-- Code: `src/domain/ports/driving/` – IAddBookUseCase, IBorrowBookUseCase, IReturnBookUseCase…, mỗi cái có execute(...).
+- Code: `src/port/driving/` – `IAddBookUseCase`, `IBorrowBookUseCase`, `IReturnBookUseCase`…, mỗi cái có `execute(...)`.
 
 ### 3. Outbound Port (driven)
-Contract để core đọc/ghi data. Core chỉ biết “lưu sách” và “tìm sách theo id”.
-- Code: IBookRepository (save, findById), IUserRepository (save, findById) trong `src/domain/ports/driven/`.
+Contract để core đọc/ghi data và quản lý transaction. Core chỉ biết “lưu sách”, “tìm sách theo id” và “bắt đầu/commit/rollback Unit of Work”.
+- Code: `IBookRepository`, `IUserRepository`, `IUnitOfWork`, `IUnitOfWorkFactory` trong `src/port/driven/`.
 
 ### 4. Inbound Adapter (driving)
 Nhận HTTP (req/res), lấy params, gọi use case, trả JSON.
@@ -119,37 +118,41 @@ Tạo file `.env` với `MONGO_URI` nếu dùng MongoDB. Nếu không thì dùng
 ```
 src/
 ├── application/
-│   └── use-cases/
-│       ├── AddBook.ts
-│       ├── AddUser.ts
-│       ├── BorrowBook.ts
-│       ├── BorrowBook.test.ts
-│       ├── ReturnBook.ts
-│       └── ReturnBook.test.ts
-├── domain/
-│   ├── entities/
-│   │   ├── Book.ts
-│   │   ├── Book.test.ts
-│   │   ├── User.ts
-│   │   └── User.test.ts
-│   └── ports/
-│       ├── driven/
-│       │   ├── IBookRepository.ts
-│       │   └── IUserRepository.ts
-│       └── driving/
-│           ├── IAddBookUseCase.ts
-│           ├── IAddUserUseCase.ts
-│           ├── IBorrowBookUseCase.ts
-│           └── IReturnBookUseCase.ts
+│   ├── AddBook.ts
+│   ├── AddUser.ts
+│   ├── BorrowBook.ts
+│   ├── BorrowBook.test.ts
+│   ├── ReturnBook.ts
+│   └── ReturnBook.test.ts
+├── entities/
+│   ├── Book.ts
+│   ├── Book.test.ts
+│   ├── User.ts
+│   └── User.test.ts
 ├── infrastructure/
 │   └── adapters/
 │       ├── driven/
 │       │   ├── InMemoryBookRepository.ts
+│       │   ├── InMemoryUnitOfWork.ts
+│       │   ├── InMemoryUnitOfWorkFactory.ts
 │       │   ├── InMemoryUserRepository.ts
 │       │   ├── MongoBookRepository.ts
+│       │   ├── MongoUnitOfWork.ts
+│       │   ├── MongoUnitOfWorkFactory.ts
 │       │   └── MongoUserRepository.ts
 │       └── driving/
 │           ├── BookController.ts
 │           └── UserController.ts
+├── port/
+│   ├── driven/
+│   │   ├── IBookRepository.ts
+│   │   ├── IUnitOfWork.ts
+│   │   ├── IUnitOfWorkFactory.ts
+│   │   └── IUserRepository.ts
+│   └── driving/
+│       ├── IAddBookUseCase.ts
+│       ├── IAddUserUseCase.ts
+│       ├── IBorrowBookUseCase.ts
+│       └── IReturnBookUseCase.ts
 └── index.ts
 ```
