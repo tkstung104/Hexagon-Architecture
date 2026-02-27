@@ -1,8 +1,7 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, type ClientSession } from "mongoose";
 import { Book } from "@entities/Book.js";
 import type { IBookRepository } from "@port/driven/IBookRepository.js";
 
-// Define Schema for MongoDB
 const BookSchema = new Schema({
   _id: String,
   title: String,
@@ -12,20 +11,26 @@ const BookSchema = new Schema({
 
 const BookModel = model("Book", BookSchema);
 
-// Implement Adapter
 export class MongoBookRepository implements IBookRepository {
+  constructor(private readonly session?: ClientSession) {}
+
   async save(book: Book): Promise<void> {
     await BookModel.findByIdAndUpdate(
       book.id,
       { title: book.title, author: book.author, isBorrowed: book.isBorrowed },
-      { upsert: true } // Create if not exists
+      { upsert: true, ...(this.session ? { session: this.session } : {}) }
     );
   }
 
   async findById(id: string): Promise<Book | null> {
-    const doc = await BookModel.findById(id);
+    const query = BookModel.findById(id);
+    if (this.session) query.session(this.session);
+    const doc = await query;
     if (!doc) return null;
-    // Convert from MongoDB Document to Domain Entity
-    return new Book(doc._id as string, doc.title!, doc.author!, doc.isBorrowed!);
+    return new Book(
+      doc._id as string, 
+      doc.title!, 
+      doc.author!, 
+      doc.isBorrowed!);
   }
 }
