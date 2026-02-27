@@ -16,7 +16,7 @@
   - Driving: Controller (ở đây là Express) gọi use case qua driving port.
   - Driven: In-Memory hoặc Mongo implementation cho repository và Unit of Work (`MongoBookRepository`, `MongoUserRepository`, `MongoUnitOfWork`, `InMemory*`).
 
-Luồng hoạt động theo dependency: **HTTP → Controller → Driving Port (Use Case) → Use Case → Driven Port (UnitOfWork / Repository) → MongoDB / InMemory**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
+Luồng hoạt động theo dependency: **HTTP -> Controller -> Driving Port (Use Case) -> Use Case -> Driven Port (UnitOfWork / Repository) -> MongoDB / InMemory**. Domain và use case không biết Express hay MongoDB; có thể đổi DB hoặc thêm API khác mà không sửa lõi.
 
 ## Kiến trúc Hexagonal trong dự án – component và code
 
