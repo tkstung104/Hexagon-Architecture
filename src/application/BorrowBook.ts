@@ -23,10 +23,24 @@ export class BorrowBook implements IBorrowBookUseCase {
     // if (!user.canBorrowMore()) throw new Error("The number of books borrowed is reached the limit of 5");
     user.addBorrowedBook(bookId);
 
-    // Save through Port
-    await Promise.all([
-      this.bookRepo.save(book),
-      this.userRepo.save(user)
-    ]);
+    // Save through Port - Buffalo cow
+    
+    // await Promise.all([
+    //   this.bookRepo.save(book),
+    //   this.userRepo.save(user)
+    // ]);
+
+    await this.bookRepo.save(book);
+
+    try {
+      // Try to save user
+      await this.userRepo.save(user);
+    } catch (error) {
+      // If save user failed, rollback book
+      book.returnBook();
+      await this.bookRepo.save(book);
+
+      throw new Error("Failed to save user, system will rollback book");
+    }
   }
 }
