@@ -1,31 +1,35 @@
-import type { IUnitOfWork } from "@port/driven/IUnitOfWork.js";
-import type { IUnitOfWorkFactory } from "@port/driven/IUnitOfWorkFactory.js";
+import { BorrowRecord } from "@entities/BorrowRecord.js";
+import type { IBookRepository } from "@port/driven/IBookRepository.js";
+import type { IUserRepository } from "@port/driven/IUserRepository.js";
+import type { IBorrowRecordRepository } from "@port/driven/IBorrowRecordRepository.js";
+import type { ITransaction } from "@port/driven/ITransaction.js";
+import type { IIdGenerator } from "@port/driven/IIdGenerator.js";
 import type { IBorrowBookUseCase } from "use-cases/IBorrowBookUseCase.js";
+import { DefaultBorrowPolicy } from "@entities/policy.js";
 
 export class BorrowBook implements IBorrowBookUseCase {
-  constructor(private readonly uowFactory: IUnitOfWorkFactory) {}
+  constructor(
+    private readonly bookRepo: IBookRepository,
+    private readonly userRepo: IUserRepository,
+    private readonly borrowRecordRepo: IBorrowRecordRepository,
+    private readonly idGenerator: IIdGenerator,
+    private readonly transaction: ITransaction,
+  ) {}
 
   async execute(userId: string, bookId: string): Promise<void> {
-    const uow: IUnitOfWork = this.uowFactory.create();
-    await uow.start();
-    try {
-      const user = await uow.userRepository.findById(userId);
-      const book = await uow.bookRepository.findById(bookId);
+    const book = await this.bookRepo.findById(bookId);
+    const user = await this.userRepo.findById(userId);
 
-      if (!user) throw new Error("User not exist");
-      if (!book) throw new Error("book not exist");
+    if (!book) throw new Error("Book not exist");
+    if (!user) throw new Error("User not exist");
 
-      user.canBorrowMore();
-      book.borrow();
-      user.addBorrowedBook(bookId);
+    const activeRecords = await this.borrowRecordRepo.findActiveByUserId(userId);
 
-      await uow.bookRepository.save(book);
-      await uow.userRepository.save(user);
+    DefaultBorrowPolicy.ensureCanBorrow(user, book, activeRecords);
 
-      await uow.commit();
-    } catch (error) {
-      await uow.rollback();
-      throw error;
-    }
+    const id = this.idGenerator.generate();
+    const record = BorrowRecord.create(id, bookId, userId);
+
+    await this.transaction.saveBorrowing(book, record);
   }
 }

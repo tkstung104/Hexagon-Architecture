@@ -15,6 +15,10 @@ export class Book {
     }
   
     public returnBook(): void {
+      // isBorrowed = false
+      if (!this.isBorrowed) {
+        throw new Error('This book is not being borrowed, therefore can not be returned');
+      }
       this.isBorrowed = false;
     }
 

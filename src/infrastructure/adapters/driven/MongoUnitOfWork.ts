@@ -1,18 +1,27 @@
 import mongoose from "mongoose";
 import type { IUnitOfWork } from "@port/driven/IUnitOfWork.js";
-import { MongoBookRepository } from "@infrastructure/adapters/driven/MongoBookRepository.js";
-import { MongoUserRepository } from "@infrastructure/adapters/driven/MongoUserRepository.js";
+import { MongoBookRepository } from "./MongoBookRepository.js";
+import { MongoUserRepository } from "./MongoUserRepository.js";
+import { MongoBorrowRecordRepository } from "./MongoBorrowRecordRepository.js";
 
 export class MongoUnitOfWork implements IUnitOfWork {
   private session: mongoose.ClientSession | null = null;
   private _bookRepository: MongoBookRepository | null = null;
   private _userRepository: MongoUserRepository | null = null;
+  private _borrowRecordRepository: MongoBorrowRecordRepository | null = null;
 
   async start(): Promise<void> {
     this.session = await mongoose.startSession();
-    this.session.startTransaction();
+    try {
+      this.session.startTransaction();
+    }catch (error) {
+      await this.session.endSession();
+      this.session = null;
+      throw error;
+    }
     this._bookRepository = new MongoBookRepository(this.session);
     this._userRepository = new MongoUserRepository(this.session);
+    this._borrowRecordRepository = new MongoBorrowRecordRepository(this.session);
   }
 
   async commit(): Promise<void> {
@@ -24,6 +33,7 @@ export class MongoUnitOfWork implements IUnitOfWork {
       this.session = null;
       this._bookRepository = null;
       this._userRepository = null;
+      this._borrowRecordRepository = null;
     }
   }
 
@@ -39,6 +49,7 @@ export class MongoUnitOfWork implements IUnitOfWork {
       this.session = null;
       this._bookRepository = null;
       this._userRepository = null;
+      this._borrowRecordRepository = null;
     }
   }
 
@@ -50,5 +61,10 @@ export class MongoUnitOfWork implements IUnitOfWork {
   get userRepository(): MongoUserRepository {
     if (!this._userRepository) throw new Error("Unit of Work not started");
     return this._userRepository;
+  }
+
+  get borrowRecordRepository(): MongoBorrowRecordRepository {
+    if (!this._borrowRecordRepository) throw new Error("Unit of Work not started");
+    return this._borrowRecordRepository;
   }
 }

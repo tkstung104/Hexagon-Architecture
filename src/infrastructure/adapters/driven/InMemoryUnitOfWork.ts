@@ -1,6 +1,7 @@
 import type { IUnitOfWork } from "@port/driven/IUnitOfWork.js";
 import type { IBookRepository } from "@port/driven/IBookRepository.js";
 import type { IUserRepository } from "@port/driven/IUserRepository.js";
+import type { IBorrowRecordRepository } from "@port/driven/IBorrowRecordRepository.js";
 
 /**
  * In-memory implementation of Unit of Work (no real transaction).
@@ -9,7 +10,8 @@ import type { IUserRepository } from "@port/driven/IUserRepository.js";
 export class InMemoryUnitOfWork implements IUnitOfWork {
   constructor(
     private readonly _bookRepository: IBookRepository,
-    private readonly _userRepository: IUserRepository
+    private readonly _userRepository: IUserRepository,
+    private readonly _borrowRecordRepository: IBorrowRecordRepository
   ) {}
 
   async start(): Promise<void> {
@@ -30,5 +32,9 @@ export class InMemoryUnitOfWork implements IUnitOfWork {
 
   get userRepository(): IUserRepository {
     return this._userRepository;
+  }
+
+  get borrowRecordRepository(): IBorrowRecordRepository {
+    return this._borrowRecordRepository;
   }
 }

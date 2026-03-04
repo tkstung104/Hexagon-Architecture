@@ -1,25 +1,15 @@
 export class User {
-    constructor(
-      public readonly id: string,
-      public readonly name: string,
-      public readonly email: string,
-      public borrowedBookIds: string[] = []
-    ) {}
-  
-    public addBorrowedBook(bookId: string): void {
-      this.borrowedBookIds.push(bookId);
-    }
+  constructor(
+    public readonly id: string,
+    public name: string,
+    public email: string
+  ) {}
 
-    public removeBorrowedBook(bookId: string): void {
-      this.borrowedBookIds = this.borrowedBookIds.filter((id) => id !== bookId);
+  public updateProfile(newName: string, newEmail: string): void {
+    if (!newName.trim() || !newEmail.trim()) {
+      throw new Error("Name and email cannot be empty");
     }
-
-    public getBorrowedBooksCount(): number {
-      return this.borrowedBookIds.length;
-    }
-
-    public canBorrowMore(): void {
-      if (this.borrowedBookIds.length >= 5) throw new Error("The number of books borrowed is reached the limit of 5");
-    }
-
+    this.name = newName;
+    this.email = newEmail;
   }
+}

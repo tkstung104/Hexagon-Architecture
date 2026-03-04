@@ -12,17 +12,24 @@ import { MongoUnitOfWorkFactory } from "@infrastructure/adapters/driven/MongoUni
 import { InMemoryUnitOfWorkFactory } from "@infrastructure/adapters/driven/InMemoryUnitOfWorkFactory.js";
 import { BookController } from "@infrastructure/adapters/driving/BookController.js";
 import { UserController } from "@infrastructure/adapters/driving/UserController.js";
+import { MongoTransaction } from "@infrastructure/adapters/driven/MongoTransaction.js";
+import { MongoBorrowRecordRepository } from "@infrastructure/adapters/driven/MongoBorrowRecordRepository.js";
+import { InMemoryBorrowRecordRepository } from "@infrastructure/adapters/driven/InMemoryBorrowRecordRepository.js";
+import { InMemoryTransaction } from "@infrastructure/adapters/driven/InMemoryTransaction.js";
 
-// Use Cases
-import { BorrowBook } from "@application/BorrowBook.js";
-import { ReturnBook } from "@application/ReturnBook.js";
-import { AddBook } from "@application/AddBook.js";
-import { AddUser } from "@application/AddUser.js";
+// Use Cases  
+import { BorrowBook } from "@use-cases/BorrowBook.js";
+import { ReturnBook } from "@use-cases/ReturnBook.js";
+import { AddBook } from "@use-cases/AddBook.js";
+import { AddUser } from "@use-cases/AddUser.js";
 
 // Ports
 import type { IBookRepository } from "@port/driven/IBookRepository.js";
 import type { IUserRepository } from "@port/driven/IUserRepository.js";
 import type { IUnitOfWorkFactory } from "@port/driven/IUnitOfWorkFactory.js";
+import { UuidIdGenerator } from "@infrastructure/adapters/driven/UuidIdGenerator.js";
+import type { ITransaction } from "@port/driven/ITransaction.js";
+import type { IBorrowRecordRepository } from "@port/driven/IBorrowRecordRepository.js";
 
 dotenv.config();
 
@@ -37,22 +44,29 @@ async function bootstrap() {
     let bookRepo: IBookRepository;
     let userRepo: IUserRepository;
     let uowFactory: IUnitOfWorkFactory;
+    let transaction: ITransaction;
+    let borrowRecordRepo: IBorrowRecordRepository;
 
     if (!uri) {
       console.log("Running with InMemory (no MongoDB). Set USE_MEMORY=true or leave MONGO_URI empty.");
       bookRepo = new InMemoryBookRepository();
       userRepo = new InMemoryUserRepository();
-      uowFactory = new InMemoryUnitOfWorkFactory(bookRepo, userRepo);
+      borrowRecordRepo = new InMemoryBorrowRecordRepository();
+      uowFactory = new InMemoryUnitOfWorkFactory(bookRepo, userRepo, borrowRecordRepo);
+      transaction = new InMemoryTransaction(bookRepo, borrowRecordRepo);
     } else {
       await mongoose.connect(uri, { autoSelectFamily: false });
       console.log("Successfully connected to MongoDB Atlas!");
       bookRepo = new MongoBookRepository();
       userRepo = new MongoUserRepository();
       uowFactory = new MongoUnitOfWorkFactory();
+      transaction = new MongoTransaction();
+      borrowRecordRepo = new MongoBorrowRecordRepository();
     }
 
-    const borrowBookUseCase = new BorrowBook(uowFactory);
-    const returnBookUseCase = new ReturnBook(uowFactory);
+    const idGenerator = new UuidIdGenerator();
+    const borrowBookUseCase = new BorrowBook(bookRepo, userRepo, borrowRecordRepo, idGenerator, transaction);
+    const returnBookUseCase = new ReturnBook(bookRepo, userRepo, borrowRecordRepo, transaction);
     const addBookUseCase = new AddBook(bookRepo);
     const addUserUseCase = new AddUser(userRepo);
 

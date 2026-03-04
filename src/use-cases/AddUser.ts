@@ -6,7 +6,7 @@ export class AddUser implements IAddUserUseCase {
   constructor(private userRepo: IUserRepository) {}
 
   async execute(id: string, name: string, email: string): Promise<void> {
-    const user = new User(id.trim(), name.trim(), email.trim(), []);
+    const user = new User(id, name, email);
     await this.userRepo.save(user);
   }
 }
