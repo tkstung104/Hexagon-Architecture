@@ -8,8 +8,6 @@ import { MongoBookRepository } from "@infrastructure/adapters/driven/MongoBookRe
 import { MongoUserRepository } from "@infrastructure/adapters/driven/MongoUserRepository.js";
 import { InMemoryBookRepository } from "@infrastructure/adapters/driven/InMemoryBookRepository.js";
 import { InMemoryUserRepository } from "@infrastructure/adapters/driven/InMemoryUserRepository.js";
-import { MongoUnitOfWorkFactory } from "@infrastructure/adapters/driven/MongoUnitOfWorkFactory.js";
-import { InMemoryUnitOfWorkFactory } from "@infrastructure/adapters/driven/InMemoryUnitOfWorkFactory.js";
 import { BookController } from "@infrastructure/adapters/driving/BookController.js";
 import { UserController } from "@infrastructure/adapters/driving/UserController.js";
 import { MongoTransaction } from "@infrastructure/adapters/driven/MongoTransaction.js";
@@ -26,7 +24,6 @@ import { AddUser } from "@use-cases/AddUser.js";
 // Ports
 import type { IBookRepository } from "@port/driven/IBookRepository.js";
 import type { IUserRepository } from "@port/driven/IUserRepository.js";
-import type { IUnitOfWorkFactory } from "@port/driven/IUnitOfWorkFactory.js";
 import { UuidIdGenerator } from "@infrastructure/adapters/driven/UuidIdGenerator.js";
 import type { ITransaction } from "@port/driven/ITransaction.js";
 import type { IBorrowRecordRepository } from "@port/driven/IBorrowRecordRepository.js";
@@ -43,7 +40,6 @@ async function bootstrap() {
 
     let bookRepo: IBookRepository;
     let userRepo: IUserRepository;
-    let uowFactory: IUnitOfWorkFactory;
     let transaction: ITransaction;
     let borrowRecordRepo: IBorrowRecordRepository;
 
@@ -52,14 +48,12 @@ async function bootstrap() {
       bookRepo = new InMemoryBookRepository();
       userRepo = new InMemoryUserRepository();
       borrowRecordRepo = new InMemoryBorrowRecordRepository();
-      uowFactory = new InMemoryUnitOfWorkFactory(bookRepo, userRepo, borrowRecordRepo);
       transaction = new InMemoryTransaction(bookRepo, borrowRecordRepo);
     } else {
       await mongoose.connect(uri, { autoSelectFamily: false });
       console.log("Successfully connected to MongoDB Atlas!");
       bookRepo = new MongoBookRepository();
       userRepo = new MongoUserRepository();
-      uowFactory = new MongoUnitOfWorkFactory();
       transaction = new MongoTransaction();
       borrowRecordRepo = new MongoBorrowRecordRepository();
     }
