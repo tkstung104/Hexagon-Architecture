@@ -1,8 +1,8 @@
 import type { IUnitOfWork } from "@port/driven/IUnitOfWork.js";
 import type { IUnitOfWorkFactory } from "@port/driven/IUnitOfWorkFactory.js";
-import type { IBorrowBookUseCase } from "@port/driving/IBorrowBookUseCase.js";
+import type { IReturnBookUseCase } from "use-cases/IReturnBookUseCase.js";
 
-export class BorrowBook implements IBorrowBookUseCase {
+export class ReturnBook implements IReturnBookUseCase {
   constructor(private readonly uowFactory: IUnitOfWorkFactory) {}
 
   async execute(userId: string, bookId: string): Promise<void> {
@@ -12,12 +12,11 @@ export class BorrowBook implements IBorrowBookUseCase {
       const user = await uow.userRepository.findById(userId);
       const book = await uow.bookRepository.findById(bookId);
 
-      if (!user) throw new Error("User not exist");
-      if (!book) throw new Error("book not exist");
+      if (!user) throw new Error("User not found");
+      if (!book) throw new Error("Book not found");
 
-      user.canBorrowMore();
-      book.borrow();
-      user.addBorrowedBook(bookId);
+      book.returnBook();
+      user.removeBorrowedBook(bookId);
 
       await uow.bookRepository.save(book);
       await uow.userRepository.save(user);

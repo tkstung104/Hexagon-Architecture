@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { IAddUserUseCase } from "@port/driving/IAddUserUseCase.js";
+import type { IAddUserUseCase } from "use-cases/IAddUserUseCase.js";
 import type { IUserRepository } from "@port/driven/IUserRepository.js";
 
 export class UserController {

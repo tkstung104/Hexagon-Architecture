@@ -1,5 +1,5 @@
 import type { IBookRepository } from "@port/driven/IBookRepository.js";
-import type { IAddBookUseCase } from "@port/driving/IAddBookUseCase.js";
+import type { IAddBookUseCase } from "use-cases/IAddBookUseCase.js";
 import { Book } from "@entities/Book.js";
 
 export class AddBook implements IAddBookUseCase {
