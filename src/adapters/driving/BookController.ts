@@ -1,16 +1,16 @@
 import type { Request, Response } from "express";
 import type { IBorrowBookUseCase } from "use-cases/IBorrowBookUseCase.js";
 import type { IAddBookUseCase } from "use-cases/IAddBookUseCase.js";
-import type { IBookRepository } from "@port/driven/IBookRepository.js";
 import type { IReturnBookUseCase } from "use-cases/IReturnBookUseCase.js";
+import type { ICatalogRepository } from "@port/driven/ICatalogRepository.js";
 
 export class BookController {
   constructor(
     private borrowBookUseCase: IBorrowBookUseCase,
     private returnBookUseCase: IReturnBookUseCase,
     private addBookUseCase: IAddBookUseCase,
-    private bookRepo: IBookRepository
-  ) {}
+    private catalogRepo: ICatalogRepository
+    ) {}
 
   async borrow(req: Request, res: Response) {
     const { userId, bookId } = req.body;
@@ -53,7 +53,7 @@ export class BookController {
       return;
     }
     try {
-      const book = await this.bookRepo.findById(id);
+      const book = await this.catalogRepo.getBook(id);
       if (!book) {
         res.status(404).json({ error: "Book not found." });
         return;

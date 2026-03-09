@@ -1,11 +1,11 @@
 import type { Request, Response } from "express";
 import type { IAddUserUseCase } from "use-cases/IAddUserUseCase.js";
-import type { IUserRepository } from "@port/driven/IUserRepository.js";
+import type { ICatalogRepository } from "@port/driven/ICatalogRepository.js";
 
 export class UserController {
   constructor(
     private addUserUseCase: IAddUserUseCase,
-    private userRepo: IUserRepository
+    private catalogRepo: ICatalogRepository
   ) {}
 
   async addUser(req: Request, res: Response) {
@@ -29,7 +29,7 @@ export class UserController {
       return;
     }
     try {
-      const user = await this.userRepo.findById(id);
+      const user = await this.catalogRepo.getUser(id);
       if (!user) {
         res.status(404).json({ error: "User not found." });
         return;
@@ -38,7 +38,8 @@ export class UserController {
         id: user.id,
         name: user.name,
         email: user.email,
-        borrowedBookIds: user.borrowedBookIds,
+        tier: user.getTier(),
+        numberOfBorrowedBooks: user.numberOfBorrowedBooks,
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });

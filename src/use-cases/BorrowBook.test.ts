@@ -1,91 +1,94 @@
 import { BorrowBook } from "./BorrowBook.js";
 import { Book } from "@entities/Book.js";
-import { User } from "@entities/User.js";
-import { BorrowRecord } from "@entities/BorrowRecord.js";
+import { BorrowedBook, User } from "@entities/User.js";
+import { DefaultBorrowPolicy } from "@entities/Policy.js";
+import type { IBorrowingRepository } from "@port/driven/IBorrowingRepository.js";
 
-describe("Unit test: Borrow Book Use Case", () => {
-  let mockBookRepo: any;
-  let mockUserRepo: any;
-  let mockBorrowRecordRepo: any;
-  let mockTransaction: any;
+describe("BorrowBook use case", () => {
+  let borrowingRepo: jest.Mocked<IBorrowingRepository>;
   let borrowBookUseCase: BorrowBook;
-  let mockIdGenerator: any;
 
   beforeEach(() => {
-    mockBookRepo = { save: jest.fn(), findById: jest.fn() };
-    mockUserRepo = { save: jest.fn(), findById: jest.fn() };
-    mockBorrowRecordRepo = { save: jest.fn(), findActiveByUserId: jest.fn().mockResolvedValue([]) };
-    mockIdGenerator = { generate: jest.fn().mockReturnValue("mock-record-id") };
-    mockTransaction = { saveBorrowing: jest.fn().mockResolvedValue(undefined) };
-    borrowBookUseCase = new BorrowBook(
-      mockBookRepo,
-      mockUserRepo,
-      mockBorrowRecordRepo,
-      mockIdGenerator,
-      mockTransaction
-    );
+    borrowingRepo = {
+      getBook: jest.fn(),
+      getUser: jest.fn(),
+      getActiveRecord: jest.fn(),
+      saveBorrowing: jest.fn(),
+      saveReturning: jest.fn(),
+    };
+
+    borrowBookUseCase = new BorrowBook(borrowingRepo, new DefaultBorrowPolicy());
   });
 
-  test("Borrow book successfully when both user and book exist and user under limit", async () => {
-    const book = new Book("B1", "Hexagonal", "Bob");
-    const user = new User("U1", "Tung", "tung@com");
+  test("borrows a book successfully when both user and book exist and user is under limit", async () => {
+    const book = new Book("B1", "Hexagonal Architecture", "Bob");
+    const user = new User("U1", "Tung", "tung@com", 0, "BASIC");
 
-    mockBookRepo.findById.mockResolvedValue(book);
-    mockUserRepo.findById.mockResolvedValue(user);
-    mockBorrowRecordRepo.findActiveByUserId.mockResolvedValue([]);
+    borrowingRepo.getBook.mockResolvedValue(book);
+    borrowingRepo.getUser.mockResolvedValue(user);
 
     await borrowBookUseCase.execute(user.id, book.id);
 
     expect(book.isBorrowed).toBe(true);
-    expect(mockTransaction.saveBorrowing).toHaveBeenCalledTimes(1);
-    const [savedBook, savedRecord] = mockTransaction.saveBorrowing.mock.calls[0];
-    expect(savedBook).toBe(book);
-    expect(savedRecord).toBeInstanceOf(BorrowRecord);
-    expect(savedRecord.id).toBe("mock-record-id");
-    expect(savedRecord.bookId).toBe("B1");
-    expect(savedRecord.userId).toBe("U1");
-    expect(savedRecord.status).toBe("ACTIVE");
+    expect(user.getNumberOfBorrowedBooks()).toBe(1);
+    expect(borrowingRepo.saveBorrowing).toHaveBeenCalledTimes(1);
+
+    const [savedUser] = borrowingRepo.saveBorrowing.mock.calls[0] as [User];
+    expect(savedUser).toBe(user);
   });
 
-  test("Throw error when book not found", async () => {
-    const myUser = new User("U1", "Tung", "tung@test.com");
-    mockBookRepo.findById.mockResolvedValue(null);
-    mockUserRepo.findById.mockResolvedValue(myUser);
+  test("throws when book does not exist", async () => {
+    const user = new User("U1", "Tung", "tung@test.com", 0, "BASIC");
 
-    await expect(borrowBookUseCase.execute("U1", "NON_EXISTENT_BOOK")).rejects.toThrow(
-      "Book not exist"
+    borrowingRepo.getBook.mockResolvedValue(null);
+    borrowingRepo.getUser.mockResolvedValue(user);
+
+    await expect(borrowBookUseCase.execute(user.id, "NON_EXISTENT_BOOK")).rejects.toThrow(
+      "Book not exist",
     );
 
-    expect(mockTransaction.saveBorrowing).not.toHaveBeenCalled();
+    expect(borrowingRepo.saveBorrowing).not.toHaveBeenCalled();
   });
 
-  test("Throw error when user not found", async () => {
-    const book = new Book("B1", "Hexagon", "Bob");
-    mockBookRepo.findById.mockResolvedValue(book);
-    mockUserRepo.findById.mockResolvedValue(null);
+  test("throws when user does not exist", async () => {
+    const book = new Book("B1", "Hexagonal Architecture", "Bob");
 
-    await expect(borrowBookUseCase.execute("NON_EXISTENT_USER", "B1")).rejects.toThrow(
-      "User not exist"
+    borrowingRepo.getBook.mockResolvedValue(book);
+    borrowingRepo.getUser.mockResolvedValue(null);
+
+    await expect(borrowBookUseCase.execute("NON_EXISTENT_USER", book.id)).rejects.toThrow(
+      "User not exist",
     );
 
-    expect(mockTransaction.saveBorrowing).not.toHaveBeenCalled();
+    expect(borrowingRepo.saveBorrowing).not.toHaveBeenCalled();
   });
 
-  test("Should throw an error if the user has already borrowed 5 books", async () => {
-    const book = new Book("b5", "Hexagon", "Bob");
-    const user = new User("u1", "tung", "tung@123");
-    const fiveRecords = Array.from({ length: 5 }, (_, i) =>
-      new BorrowRecord(`r${i}`, `b${i}`, user.id, new Date(), "ACTIVE", null)
-    );
+  test("throws when user already reached max active borrows", async () => {
+    const book = new Book("B1", "Hexagonal Architecture", "Bob");
+    const borrowedBooks = Array.from({ length: 10 }, (_, i) => new BorrowedBook(`B${i}`, `Title ${i}`));
+    const user = new User("U1", "Tung", "tung@com", 10, "VIP", borrowedBooks);
 
-    mockBookRepo.findById.mockResolvedValue(book);
-    mockUserRepo.findById.mockResolvedValue(user);
-    mockBorrowRecordRepo.findActiveByUserId.mockResolvedValue(fiveRecords);
+    borrowingRepo.getBook.mockResolvedValue(book);
+    borrowingRepo.getUser.mockResolvedValue(user);
 
     await expect(borrowBookUseCase.execute(user.id, book.id)).rejects.toThrow(
-      "The number of books borrowed is reached the limit of 5"
+      "The number of books borrowed is reached the limit of 10",
     );
 
-    expect(mockTransaction.saveBorrowing).not.toHaveBeenCalled();
+    expect(borrowingRepo.saveBorrowing).not.toHaveBeenCalled();
+  });
+
+  test("throws when book is already borrowed", async () => {
+    const book = new Book("B1", "Hexagonal Architecture", "Bob", true);
+    const user = new User("U1", "Tung", "tung@com", 0, "BASIC");
+
+    borrowingRepo.getBook.mockResolvedValue(book);
+    borrowingRepo.getUser.mockResolvedValue(user);
+
+    await expect(borrowBookUseCase.execute(user.id, book.id)).rejects.toThrow(
+      "Book is already borrowed!",
+    );
+
+    expect(borrowingRepo.saveBorrowing).not.toHaveBeenCalled();
   });
 });

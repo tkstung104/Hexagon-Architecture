@@ -4,6 +4,7 @@ const BorrowRecordSchema = new Schema({
   _id: String,
   userId: String,
   bookId: String,
+  bookTitle: String,
   borrowedAt: Date,
   status: {
     type: String,

@@ -1,4 +1,3 @@
-interface IIdGenerator {
-  generate(): string;
+export interface IIdGenerator {
+  generate(): Promise<string>;
 }
-export type { IIdGenerator };

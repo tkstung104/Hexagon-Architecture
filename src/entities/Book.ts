@@ -9,12 +9,12 @@ export class Book {
         public isBorrowed: boolean = false
     ) {}
   
-    public borrow(): void {
+    public markAsBorrowed(): void {
       this.checkIfCanBeBorrow();
       this.isBorrowed = true;
     }
   
-    public returnBook(): void {
+    public markAsReturned(): void {
       // isBorrowed = false
       if (!this.isBorrowed) {
         throw new Error('This book is not being borrowed, therefore can not be returned');
