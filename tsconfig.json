@@ -5,7 +5,7 @@
     "paths": {
       "@entities/*": ["entities/*"],
       "@port/*": ["port/*"],
-      "@application/*": ["application/*"],
+      "@use-cases/*": ["use-cases/*"],
       "@infrastructure/*": ["infrastructure/*"]
     },
     // File Layout
